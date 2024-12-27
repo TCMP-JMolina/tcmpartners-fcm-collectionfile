@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    host: ${DB_HOST}
+    port: ${DB_PORT}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    server-name: ${DB_SEVER}
+    url: jdbc:oracle:thin:@//${spring.datasource.host}:${spring.datasource.port}/${spring.datasource.server-name}
+  jpa:
+    database-platform: "org.hibernate.dialect.Oracle12cDialect"
+    properties:
+      hibernate:
+        dialect: "org.hibernate.dialect.Oracle12cDialect"  
+debts:
+  static:
+    cif: ${TEST_CIF}

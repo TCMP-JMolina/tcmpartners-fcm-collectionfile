@@ -1,0 +1,69 @@
+plugins {
+  id 'java'
+  id 'org.springframework.boot' version '3.3.2'
+  id 'io.spring.dependency-management' version '1.1.6' 
+}
+
+group = 'com.tcmp'
+version = '1.1'
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+}
+
+configurations {
+  compileOnly {
+    extendsFrom annotationProcessor
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.apache.camel.springboot:camel-spring-boot-starter:4.6.0'
+    implementation 'org.apache.camel:camel-ftp:4.6.0'
+    implementation 'org.apache.camel:camel-core:4.6.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+    implementation 'io.jsonwebtoken:jjwt:0.9.1' 
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc8'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.hibernate.orm:hibernate-community-dialects:6.4.9.Final'
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    implementation 'com.opencsv:opencsv:5.7.1'
+    implementation 'org.apache.tika:tika-core:2.6.0'
+    implementation 'org.apache.tika:tika-parsers:2.6.0'
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'com.azure:azure-storage-blob:12.22.0'
+    implementation 'com.azure:azure-storage-blob:12.21.0'
+    implementation 'org.apache.camel:camel-azure-storage-blob:4.4.0'
+    implementation 'com.azure:azure-storage-blob:12.19.0'
+    implementation 'org.apache.camel:camel-kafka:4.6.0'
+    implementation 'org.apache.camel.springboot:camel-spring-boot-starter:4.6.0'
+    implementation 'org.apache.kafka:kafka-clients:3.6.0'
+    implementation "org.apache.camel:camel-jackson:4.6.0"
+    implementation "org.apache.camel:camel-disruptor:4.6.0"
+    implementation "org.apache.camel:camel-activemq:4.6.0" // Reemplaza x.x.x con la versión de Camel core que estás usando
+}
+
+tasks.named('test') {
+  useJUnitPlatform()
+}

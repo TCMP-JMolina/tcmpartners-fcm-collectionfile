@@ -1,0 +1,28 @@
+server:
+  port: 82
+spring:
+  profiles:
+    active:
+    - local
+springdoc:
+  api-docs: 
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger
+    supportedSubmitMethods: '"get"'
+
+  sftp:
+    host: ${SFTP_HOST}
+    port: ${SFTP_PORT}
+    username: ${SFTP_USERNAME}
+    binfolder: ${SFTP_BINFOLDER}
+    urlparams: ${SFTP_URLPARAMS}
+    fileoutput: ${SFTP_FILEOUTPUT}
+    privatekey: ${SFTP_PRIVATEKEY}
+    knownhosts: ${SFTP_KNOWNHOSTS}
+
+    allowedExtensions: ${SFTP_ALLOWED_EXTENSIONS}
+
+external:
+  debtsServiceUrl: ${DEBTS_SERVICE_URL}

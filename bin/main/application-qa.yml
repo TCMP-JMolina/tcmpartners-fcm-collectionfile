@@ -1,0 +1,50 @@
+spring:
+  activemq:
+    host: ${MQ_HOST}
+    port: ${MQ_PORT}
+    user: ${MQ_USER}
+    password:  ${MQ_PASSWORD}
+    broker-url: "tcp://${spring.activemq.host}:${spring.activemq.port}"
+    packages:
+      trust-all: true
+
+  datasource:
+    host: ${DB_HOST}
+    port: ${DB_PORT}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    server-name: ${DB_SEVER}
+    url: jdbc:oracle:thin:@//${spring.datasource.host}:${spring.datasource.port}/${spring.datasource.server-name}
+  jpa:
+    database-platform: "org.hibernate.dialect.Oracle12cDialect"
+    properties:
+      hibernate:
+        dialect: "org.hibernate.dialect.Oracle12cDialect"
+
+bp:
+  api-gee:
+    headers:
+      device: ${API_GEE_DEVICE}
+    app-id: ${APP_ID}
+    api-secret: ${API_GEE_API_SECRET}
+    api-encryption-key:  ${API_GEE_APP_KEY}
+    services:
+      payment-execution:
+        base-url: "https://api-test.pichincha.com"
+        url: "${bp.api-gee.services.payment-execution.base-url}/payment-execution/v1"
+      business-banking:
+        base-url: "https://api-dev.pichincha.com"
+        url: "${bp.api-gee.services.business-banking.base-url}/business-banking/v1"
+      account-customer:
+        base-url: "https://api-test.pichincha.com"
+        url: "${bp.api-gee.services.account-customer.base-url}/customer_products_services/v1"
+
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    path: /swagger.html
+    supportedSubmitMethods: '"get", "post","put","delete"'
+service:
+  url: ${SERVURL}
