@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.cfg;
+package com.tcmp.fcupload.config;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;

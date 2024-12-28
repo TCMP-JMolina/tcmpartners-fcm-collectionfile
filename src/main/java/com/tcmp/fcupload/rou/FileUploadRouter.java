@@ -4,63 +4,36 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobProperties;
 import com.tcmp.fcupload.dto.Batch;
-import com.tcmp.fcupload.srv.CollectionFileService;
+import com.tcmp.fcupload.service.CollectionReqService;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.azure.storage.blob.BlobConstants;
-import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import com.tcmp.fcupload.srv.UplSrv;
+import com.tcmp.fcupload.service.UploadService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.time.LocalTime;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class FilUplRou extends RouteBuilder {
+public class FileUploadRouter extends RouteBuilder {
 
-    private final UplSrv uplSrv;
+    private final UploadService uploadService;
 
     @Value("${sftp.allowedExtensions}")
     private String allowedExtensionsString;
 
-    @Value("${sftp.host}")
-    private String sftpHost;
 
-    @Value("${sftp.port}")
-    private String sftpPort;
-
-    @Value("${sftp.username}")
-    private String username;
-
-    @Value("${sftp.binfolder}")
-    private String binfolder;
-
-    @Value("${sftp.urlparams}")
-    private String urlparams;
-
-    @Value("${sftp.fileoutput}")
-    private String fileOutputPath;
-
-    @Value("${sftp.privatekey}")
-    private String privateKeyPath;
-
-    @Value("${sftp.knownhosts}")
-    private String knownHostsFile;
 
     @Value("${azure.blob.containerName}")
     private String containerName;
@@ -81,7 +54,7 @@ public class FilUplRou extends RouteBuilder {
     BlobServiceClient blobServiceClient;
 
     private String kafkaTopic = "batch-processing-topic";
-    private final CollectionFileService collectionFileService;
+    private final CollectionReqService collectionReqService;
 
     @Override
     public void configure() throws Exception {
@@ -175,7 +148,7 @@ public class FilUplRou extends RouteBuilder {
 
         from("activemq:queue:COLLECTIONFILE_REQ" )
                 .log("Listening the COLLECTIONFILE_REQ: ${body}")
-                .process(new CollectionReqProcessor(collectionFileService))
+                .process(new CollectionReqProcessor(collectionReqService))
                 .end();
 
         from("direct:sendTo_COLLECTIONFILE_RESP")
@@ -205,7 +178,7 @@ public class FilUplRou extends RouteBuilder {
         InputStream inputStream = exchange.getIn().getBody(InputStream.class);
         if (inputStream != null && isAcceptedFile(exchange)) {
             exchange.getIn().setBody(inputStream);
-            uplSrv.processFile(exchange);
+            uploadService.processFile(exchange);
         } else {
             log.warn("No InputStream available in exchange.");
         }

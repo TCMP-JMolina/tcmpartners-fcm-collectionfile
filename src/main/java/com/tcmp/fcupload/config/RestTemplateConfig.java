@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.cfg;
+package com.tcmp.fcupload.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

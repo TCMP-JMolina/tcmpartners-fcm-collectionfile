@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.srv.FileTypes;
+package com.tcmp.fcupload.service.FileTypes;
 
 import java.util.List;
 

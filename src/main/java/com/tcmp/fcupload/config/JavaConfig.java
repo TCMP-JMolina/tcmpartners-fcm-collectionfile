@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.cfg;
+package com.tcmp.fcupload.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

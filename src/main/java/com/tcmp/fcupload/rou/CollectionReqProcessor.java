@@ -1,6 +1,6 @@
 package com.tcmp.fcupload.rou;
 
-import com.tcmp.fcupload.srv.CollectionFileService;
+import com.tcmp.fcupload.service.CollectionReqService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CollectionReqProcessor implements Processor {
 
-    private final CollectionFileService collectionFileService;
+    private final CollectionReqService collectionReqService;
 
     @Override
     public void process(Exchange exchange) throws Exception {
         String body = exchange.getIn().getBody(String.class);
-        collectionFileService.processCollectionFileRequest(body);
+        collectionReqService.processCollectionFileRequest(body);
     }
 }

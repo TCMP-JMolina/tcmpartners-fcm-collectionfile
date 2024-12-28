@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.cfg;
+package com.tcmp.fcupload.config;
 
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;

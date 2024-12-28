@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.cfg;
+package com.tcmp.fcupload.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;

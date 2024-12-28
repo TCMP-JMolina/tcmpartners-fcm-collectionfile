@@ -12,72 +12,73 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InvBill {
+public class InvBiller {
+
 
     @Id
     @Column(name = "BILLID", length = 36, nullable = false)
-    private String billId;
+    private String id;
 
     @Column(name = "CLICIF")
-    private String cliCIF;
+    private String clientCIF;
 
     @Column(name = "SERVICEID")
     private String serviceId;
 
     @Column(name = "BILLCPART")
-    private String billCpart;
+    private String counterpart;
 
     @Column(name = "BILLTOTAL", precision = 19, scale = 2)
-    private BigDecimal billTotal;
+    private BigDecimal totalAmount;
 
     @Column(name = "BILLCCY")
-    private String billCcy;
+    private String currency;
 
     @Column(name = "BILLPMETHOD")
-    private String billPMethod;
+    private String paymentMethod;
 
     @Column(name = "BILLACCTYPE")
-    private String billAccType;
+    private String accountType;
 
     @Column(name = "BILLACCCODE")
-    private String billAccCode;
+    private String accountCode;
 
     @Column(name = "BILLIDTYPE")
-    private String billIdType;
+    private String idType;
 
     @Column(name = "BILLIDCODE")
-    private String billIdCode;
+    private String idCode;
 
     @Column(name = "BILLFULLNAME")
-    private String billFullName;
+    private String fullName;
 
     @Column(name = "BILLDESC")
-    private String billDesc;
+    private String description;
 
     @Column(name = "BILLSTATUS")
-    private String billStatus;
+    private String status;
 
     @Column(name = "BILLSUBSTATUS")
-    private String billSubStatus;
+    private String subStatus;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "BILLDATE")
-    private Date billDate;
+    private Date date;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "BILLEXPIRATION")
-    private Date billExpiration;
+    private Date expirationDate;
 
     @Column(name = "BILLSUBJECT")
-    private String billSubject;
+    private String subject;
 
     @Column(name = "BILLCATEGORY")
-    private String billCategory;
+    private String category;
 
     @Column(name = "BILLUPLOAD")
-    private String billUpload;
+    private String uploadedFileId;
 
     @Column(name = "BILLCUSTOMFIELDS")
-    private String billCustomFields;
+    private String customFields;
 
 }
