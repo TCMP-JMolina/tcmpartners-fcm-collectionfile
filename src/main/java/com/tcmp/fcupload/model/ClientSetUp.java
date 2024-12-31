@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.mdl;
+package com.tcmp.fcupload.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "CLIENT_SERVICE_SETUP", schema = "FCM")
-public class DtlCompany {
+public class ClientSetUp {
 
 	@Id
 	@Column(name = "CLIENT_ID", length = 12, nullable = false)

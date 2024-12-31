@@ -24,9 +24,6 @@ public class FileUploadMetadata {
     @JsonProperty("Source")
     private String source;
 
-//    @JsonProperty("CustomFields")
-//    private CustomFields customFields;
-
     @JsonProperty("Reference")
     private String reference;
 

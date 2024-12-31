@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.mdl;
+package com.tcmp.fcupload.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

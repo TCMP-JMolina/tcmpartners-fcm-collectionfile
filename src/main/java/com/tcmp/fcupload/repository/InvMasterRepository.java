@@ -1,9 +1,9 @@
-package com.tcmp.fcupload.rep;
+package com.tcmp.fcupload.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.tcmp.fcupload.mdl.InvMaster;
+import com.tcmp.fcupload.model.InvMaster;
 
 import java.util.List;
 

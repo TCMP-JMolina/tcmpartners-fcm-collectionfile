@@ -1,7 +1,7 @@
 package com.tcmp.fcupload.service;
 
-import com.tcmp.fcupload.mdl.DtlCompany;
-import com.tcmp.fcupload.rep.DtlCompanyRep;
+import com.tcmp.fcupload.model.ClientSetUp;
+import com.tcmp.fcupload.repository.ClientSetUpRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,45 +13,35 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BatchService {
 
-	private final DtlCompanyRep dtlCompanyRep; // Inyección del repository
+	private final ClientSetUpRepository clientSetUpRepository;
 
-	/**
-	 * Método para obtener el shortName basado en el clientId.
-	 * @param clientId Identificador del cliente.
-	 * @return El shortName del cliente si existe, o un mensaje de advertencia si no.
-	 */
+
 	public String getShortNameByClientId(String clientId) {
-		Optional<DtlCompany> companyOpt = dtlCompanyRep.findByClientId(clientId).stream().findFirst();
+		Optional<ClientSetUp> clientSetUp = clientSetUpRepository.findByClientId(clientId).stream().findFirst();
 
-		return companyOpt.map(DtlCompany::getShortName) // Obtén el shortName si existe
+		return clientSetUp.map(ClientSetUp::getShortName) //
 				.orElseGet(() -> {
-					log.warn("No company found for clientId: {}", clientId);
+					log.warn("No shortname found for clientId in clientSetUpRep: {}", clientId);
 					return "No short name found for clientId: " + clientId;
 				});
 	}
 
-	/**
-	 * Consulta el clientType basado en el cif.
-	 *
-	 * @param cif El cif a consultar.
-	 * @return El clientType si se encuentra, de lo contrario, un mensaje de error.
-	 */
 	public String getClientTypeByCif(String cif) {
-		Optional<DtlCompany> companyOpt = dtlCompanyRep.findByClientId(cif).stream().findFirst();
+		Optional<ClientSetUp> clientSetUp = clientSetUpRepository.findByClientId(cif).stream().findFirst();
 
-		return companyOpt.map(DtlCompany::getClientType)
+		return clientSetUp.map(ClientSetUp::getClientType)
 				.orElseGet(() -> {
-					log.warn("No company found for cif: {}", cif);
+					log.warn("No client type found for cif in clientSetUpRep: {}", cif);
 					return "No client type found for cif: " + cif;
 				});
 	}
 
 	public String getClientName(String clientId) {
-		Optional<DtlCompany> companyOpt = dtlCompanyRep.findByClientId(clientId).stream().findFirst();
+		Optional<ClientSetUp> clientSetUp = clientSetUpRepository.findByClientId(clientId).stream().findFirst();
 
-		return companyOpt.map(DtlCompany::getClientName)
+		return clientSetUp.map(ClientSetUp::getClientName)
 				.orElseGet(() -> {
-					log.warn("No company found for clientId: {}", clientId);
+					log.warn("No name found for clientId in clientSetUpRep: {}", clientId);
 					return "No client name found for clientId: " + clientId;
 				});
 	}

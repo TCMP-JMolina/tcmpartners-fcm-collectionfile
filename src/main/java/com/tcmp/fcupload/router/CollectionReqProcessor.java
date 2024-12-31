@@ -1,4 +1,4 @@
-package com.tcmp.fcupload.rou;
+package com.tcmp.fcupload.router;
 
 import com.tcmp.fcupload.service.CollectionReqService;
 import lombok.RequiredArgsConstructor;

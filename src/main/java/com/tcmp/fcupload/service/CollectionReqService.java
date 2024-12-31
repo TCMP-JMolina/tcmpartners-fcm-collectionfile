@@ -8,10 +8,10 @@ import com.tcmp.fcupload.dto.response.FndtMsgResponse;
 import com.tcmp.fcupload.dto.response.Header;
 import com.tcmp.fcupload.dto.response.Msg;
 import com.tcmp.fcupload.dto.response.ResponseDetails;
-import com.tcmp.fcupload.mdl.InvBiller;
-import com.tcmp.fcupload.mdl.InvMaster;
-import com.tcmp.fcupload.rep.InvBillerRepository;
-import com.tcmp.fcupload.rep.InvMasterRepository;
+import com.tcmp.fcupload.model.InvBiller;
+import com.tcmp.fcupload.model.InvMaster;
+import com.tcmp.fcupload.repository.InvBillerRepository;
+import com.tcmp.fcupload.repository.InvMasterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.ProducerTemplate;
@@ -86,7 +86,7 @@ public class CollectionReqService {
     private void sendResponse(FndtMsg request) throws JsonProcessingException {
         FndtMsgResponse response = createResponse(request);
         String message = convertToXml(response);
-        producerTemplate.sendBody("direct:sendTo_COLLECTIONFILE_RESP", message);
+        producerTemplate.sendBody("direct:sendResponseFCM", message);
     }
 
     private String convertToXml(FndtMsgResponse response) throws JsonProcessingException {

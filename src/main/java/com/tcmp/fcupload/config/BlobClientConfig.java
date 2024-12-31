@@ -22,7 +22,7 @@ public class BlobClientConfig {
     @Bean
     public BlobServiceClient blobServiceClient() {
         return new BlobServiceClientBuilder()
-                .endpoint(component.getAzureStorageBlob().getAccountName())
+                .endpoint(component.getAzureStorageBlob().getEndpoint())
                 .sasToken(component.getAzureStorageBlob().getSasToken())
                 .buildClient();
     }
@@ -34,7 +34,11 @@ public class BlobClientConfig {
         @Data
         public static class AzureStorageBlob {
             private String sasToken;
+            private String endpoint;
             private String accountName;
+            private String containerName;
+            private String allowedExtensions;
+            private String readDirectory;
         }
     }
 }

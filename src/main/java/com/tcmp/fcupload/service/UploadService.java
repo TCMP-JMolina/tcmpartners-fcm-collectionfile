@@ -11,26 +11,23 @@ import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import com.tcmp.fcupload.dto.*;
-import com.tcmp.fcupload.mdl.InvBiller;
-import com.tcmp.fcupload.mdl.InvMaster;
-import com.tcmp.fcupload.rep.InvBillerRepository;
+import com.tcmp.fcupload.model.InvMaster;
 import com.tcmp.fcupload.service.FileTypes.*;
 import com.tcmp.fcupload.utils.FileUtils;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.component.azure.storage.blob.BlobConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tcmp.fcupload.rep.InvMasterRepository;
+import com.tcmp.fcupload.repository.InvMasterRepository;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -53,29 +50,24 @@ public class UploadService {
     @Value("${external.debtsServiceUrl}")
     private String debtsServiceUrl;
 
-    private final InvBillerRepository invBillerRepository;
     private final InvMasterRepository invMasterRepository;
-
-    // Configuración del tamaño del lote y del pool de hilos
+    Integer rejectedLines = 0;
+    Integer successLines = 0;
     private final Map<String, List<String>> fileLinesCache = new ConcurrentHashMap<>();
-    private Integer rejectedLines = 0;
-    private Integer successLines = 0;
     List<Map<String, String>> basicIntrumentList;
-    final int BATCH_SIZE = 1000; // Tamaño del lote
-    List<InvMaster> invMasterBatches = new ArrayList<>();
-    List<InvBiller> invBillerBatches = new ArrayList<>();
-    List<Map<String, String>> processedLines = new ArrayList<>();
+
+
     @Autowired
     private FileUtils fileUtils;
 
-    public void processFile(Exchange exchange) {
+    @Autowired
+    private CacheManager cacheManager;
+
+
+    // public void processFile(Exchange exchange)  {
+    public void processFile(Exchange exchange, Map<String, Object> blobMetadataRaw, String fileName, Long fileSize) throws IOException {
 
         long startTime = System.currentTimeMillis();
-
-        Map<String, Object> headers = exchange.getIn().getHeaders();
-        Map<String, Object> blobMetadataRaw =  exchange.getIn().getHeader("CamelAzureStorageBlobMetadata", Map.class);
-
-
         Map<String, Object> blobMetadata = new HashMap<>();
 
         if (blobMetadataRaw != null) {
@@ -84,40 +76,22 @@ public class UploadService {
                 blobMetadata.put(normalizedKey, entry.getValue());
             }
         }
-
-
-        String fileName = exchange.getIn().getHeader(BlobConstants.BLOB_NAME, String.class);
-        String cliCIF = blobMetadata.get("cif").toString();
-
-        Long fileSize = exchange.getIn().getHeader(BlobConstants.BLOB_SIZE, Long.class);
-        if (fileSize == null) {
-            fileSize = 0L;
-            log.warn("Can not get the size, the size is going to be 0.");
-        }
-        log.info("File Size: {}", fileSize);
-
-        String extension =
-                fileName != null
-                        ? fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase()
-                        : "unknown";
-
         try (InputStream inputStream = exchange.getIn().getBody(InputStream.class)) {
 
             if (inputStream == null || inputStream.available() == 0) {
-                log.warn("El InputStream del archivo está vacío o nulo.");
+                log.warn("The InputStream is null.");
                 return;
             }
 
 
-            // Clonar el InputStream para múltiples usos
+            String extension = fileName != null ? fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase() : "unknown";
+
+
             InputStream clonedInputStream = cloneInputStream(inputStream);
-
-            // Validar que el archivo no está vacío
             if (clonedInputStream.available() == 0) {
-                log.warn("El archivo proporcionado está vacío.");
+                log.warn("The input stream cloned is empty.");
                 return;
             }
-
             String fileMD5 = generateMD5Checksum(inputStream);
 
             int fileRowCount =
@@ -125,35 +99,37 @@ public class UploadService {
                             ? countFileRows(clonedInputStream, fileName)
                             : -1;
 
-            String fileUploadId =
-                    sendFileMetadataToService(
-                            fileName, fileMD5, fileRowCount, fileSize, "RECAUDOS"
-                            , blobMetadata.get("uploaduser").toString(), blobMetadata.get("reference").toString(),
-                            blobMetadata.get("service").toString());
 
+            String fileUploadId = sendFileMetadataToService(
+                    fileName, fileMD5, fileRowCount, fileSize, "RECAUDOS",
+                    blobMetadata.get("uploaduser").toString(), blobMetadata.get("reference").toString(),
+                    blobMetadata.get("service").toString());
             log.info("Metadata reading correctly");
-            processLineByFileName(fileLinesCache, fileName, cliCIF, fileUploadId, exchange,
+
+            processLineByFileName(fileLinesCache, fileName, blobMetadata.get("cif").toString(), fileUploadId,
                     blobMetadata.get("interfacecode").toString(), blobMetadata.get("orderid").toString(),
                     blobMetadata.get("uploaduser").toString(), blobMetadata.get("subserviceid").toString(),
                     blobMetadata.get("subservice").toString(), blobMetadata.get("accountnumber").toString());
 
+
+            successLines = (Integer) Objects.requireNonNull(Objects.requireNonNull(cacheManager.getCache("batchCache")).get("successLines")).get();
+            rejectedLines = (Integer) Objects.requireNonNull(Objects.requireNonNull(cacheManager.getCache("batchCache")).get("rejectedLines")).get();
+
             log.info("Processing status SucessLines:{} and RejectedLines:{}", successLines, rejectedLines);
+
             updateFileStatus(fileUploadId, "PROCESSING", "VALIDATING", successLines, rejectedLines);
 
-            producerTemplate.sendBody(
-                    "direct:processFileAndSendToKafka",
-                    createBatch(fileName, fileMD5, fileRowCount, cliCIF, fileUploadId, blobMetadata));
 
-        } catch (Exception e) {
-            log.error("Error processing file: " + fileName, e);
-            updateFileStatus(
-                    exchange.getIn().getHeader("fileUploadId", String.class), "FAILED", "ERROR", successLines, rejectedLines);
+//            producerTemplate.sendBody(
+//                    "direct:processFileAndSendToKafka",
+//                    createBatch(fileName, fileMD5, fileRowCount, blobMetadata.get("cif").toString(), fileUploadId, blobMetadata));
+
+            long endTime = System.currentTimeMillis();
+            log.info("Time taken to process the file '{}' : {} ms", fileName, endTime - startTime);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        long endTime = System.currentTimeMillis();
-        log.info("Time taken to process the file '{}' : {} ms", fileName, endTime - startTime);
     }
-
 
 
     private void processLineByFileName(
@@ -161,7 +137,6 @@ public class UploadService {
             String fileName,
             String cliCIF,
             String fileUploadId,
-            Exchange exchange,
             String interfaceCode,
             String orderId,
             String uploadUser,
@@ -180,17 +155,17 @@ public class UploadService {
                     log.error("Error processing line from file: {}", fileName, e);
                 }
             }
-            if (fileName.toLowerCase().contains(".csv")) {
-
-                if (interfaceCode.toUpperCase().contains("EASYP_FULL_REC")) {
-                    try {
-                        processEasyPagosCSVFile(exchange, cliCIF);
-                    } catch (Exception e) {
-                        log.error("Error processing CSV file: {}", fileName, e);
-                    }
-                }
-
-            }
+//            if (fileName.toLowerCase().contains(".csv")) {
+//
+//                if (interfaceCode.toUpperCase().contains("EASYP_FULL_REC")) {
+//                    try {
+//                        processEasyPagosCSVFile(exchange, cliCIF);
+//                    } catch (Exception e) {
+//                        log.error("Error processing CSV file: {}", fileName, e);
+//                    }
+//                }
+//
+//            }
         }
     }
 
@@ -198,15 +173,15 @@ public class UploadService {
     private FileProcessor getProcessorStrategy(String interfaceCode) {
         switch (interfaceCode.toUpperCase()) {
             case "EASYP_FULL_REC":
-                return new EasyFullProcessor(producerTemplate,fileUtils,invMasterRepository);
+                return new EasyFullProcessor(producerTemplate, fileUtils, invMasterRepository, cacheManager);
             case "EASYPAGOS_REC":
-                return new EasyProcessor(producerTemplate,fileUtils,invMasterRepository);
+                return new EasyProcessor(producerTemplate, fileUtils, invMasterRepository, cacheManager);
             case "UNIV_REC":
-                return new UnivProcessor(producerTemplate,fileUtils,invMasterRepository);
+                return new UnivProcessor(producerTemplate, fileUtils, invMasterRepository, cacheManager);
             case "DINVISA_REC":
-                return new DinvisaProcessor(producerTemplate,fileUtils,invMasterRepository);
+                return new DinvisaProcessor(producerTemplate, fileUtils, invMasterRepository, cacheManager);
             case "SHORT_UEES_REC":
-                return new ShortProcessor(producerTemplate,fileUtils,invMasterRepository);
+                return new ShortProcessor(producerTemplate, fileUtils, invMasterRepository, cacheManager);
             default:
                 throw new UnsupportedOperationException("No processor found for interfaceCode: " + interfaceCode);
         }
@@ -216,19 +191,19 @@ public class UploadService {
             String fileName,
             String fileMD5,
             int fileRowCount,
-            String cliCIF,
+            String clientCIF,
             String fileUploadId,
             Map<String, Object> metadata) {
-        int successfulLines = (int) metadata.getOrDefault("successfulLines", 0);
+        log.info("Sucesslines {}", successLines);
 
         instrumentService.createInstrument(metadata, basicIntrumentList);
 
         return Batch.builder()
                 .batchId(fileUploadId)
                 .referencia(metadata.get("reference").toString())
-                .clientName(batchService.getClientName(cliCIF)) // debe ir nombre de la empresa
-                .alternateName(batchService.getShortNameByClientId(cliCIF))
-                .clientId(cliCIF)
+                .clientName(batchService.getClientName(clientCIF))
+                .alternateName(batchService.getShortNameByClientId(clientCIF))
+                .clientId(clientCIF)
                 .type(metadata.get("producttype").toString())
                 .typeId(metadata.get("subserviceid").toString())
                 .createDate(LocalDate.now().toString())
@@ -239,7 +214,7 @@ public class UploadService {
                 .lastDate(LocalDate.now().plusDays(60).toString()) // consultar ultima modificacion
                 .medio(metadata.get("uploadmedium").toString())
                 .checksum(fileMD5)
-                .customerAffiliationId(cliCIF)
+                .customerAffiliationId(clientCIF)
                 .customerUserId(metadata.get("uploaduser").toString())
                 .customerProductId(metadata.get("subserviceid").toString())
                 .fileName(fileName)
@@ -251,8 +226,8 @@ public class UploadService {
                 .totalItemsRejected(rejectedLines)
                 .totalItemsUploaded(successLines)
                 .accountNumber(metadata.get("accountnumber").toString())
-                .accountType(batchService.getClientTypeByCif(cliCIF)) // revisar
-                .totalAmmount((float) (successfulLines / fileRowCount) * 100)
+                .accountType(batchService.getClientTypeByCif(clientCIF)) // revisar
+                .totalAmmount((float) (successLines / fileRowCount) * 100)
                 .build();
     }
 
@@ -265,10 +240,8 @@ public class UploadService {
             String uploadUser,
             String reference,
             String service) {
-        FileUploadMetadata metadata =
-                new FileUploadMetadata(fileName, fileMD5, fileRowCount, fileSize, source, reference, uploadUser, service);
+        FileUploadMetadata metadata = new FileUploadMetadata(fileName, fileMD5, fileRowCount, fileSize, source, reference, uploadUser, service);
         String url = debtsServiceUrl + "/file/manager";
-
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -281,15 +254,14 @@ public class UploadService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 String fileUploadId = response.getBody();
-                log.info("File metadata sent successfully. Received File Upload ID: " + fileUploadId);
-                return extractIdFromJson(response.getBody());
+                log.info("File metadata sent successfully. Received File Upload ID: {}", fileUploadId);
+                return extractIdFromJson(Objects.requireNonNull(response.getBody()));
             } else {
-                log.error(
-                        "Failed to send file metadata. Received status code: " + response.getStatusCode());
+                log.error("Failed to send file metadata. Received status code: {}", response.getStatusCode());
                 throw new RuntimeException("Failed to send file metadata");
             }
         } catch (Exception e) {
-            log.error("Error sending file metadata to service for file: " + fileName, e);
+            log.error("Error sending file metadata to service for file: {}", fileName, e);
             throw new RuntimeException("Error sending file metadata", e);
         }
     }
@@ -300,10 +272,7 @@ public class UploadService {
 
     public void updateFileStatus(String fileUploadId, String status, String substatus, Integer successLines, Integer rejectedLines) {
         if (status == null || substatus == null) {
-            log.error(
-                    "Error: 'status' or 'substatus' cannot be null. Status: {}, Substatus: {}",
-                    status,
-                    substatus);
+            log.error("Error: 'status' or 'substatus' cannot be null. Status: {}, Substatus: {}", status, substatus);
             throw new IllegalArgumentException("Status and Substatus must be provided");
         }
 
@@ -334,11 +303,19 @@ public class UploadService {
 
     public InputStream cloneInputStream(InputStream inputStream) throws IOException {
         if (inputStream == null) {
-            log.warn("El InputStream original es nulo.");
+            log.warn("The original InputStream is null.");
             return null;
         }
+        // Primero, marcar el InputStream para que se pueda resetear
+        inputStream.mark(Integer.MAX_VALUE); // Marca una posición, leemos hasta un límite arbitrario
+
+        // Leer los bytes
         byte[] fileBytes = inputStream.readAllBytes();
 
+        // Restablecer el InputStream a la posición marcada
+        inputStream.reset();
+
+        // Crear un nuevo ByteArrayInputStream con los bytes leídos
         return new ByteArrayInputStream(fileBytes);
     }
 
@@ -369,12 +346,10 @@ public class UploadService {
                 lines.add(line);
                 rowCount++;
             }
-
             fileLinesCache.put(fileName, lines);
         } catch (Exception e) {
             log.error("Error counting rows in file: {}", fileName, e);
         }
-
         return rowCount;
     }
 
@@ -450,8 +425,6 @@ public class UploadService {
             throw new RuntimeException(e);
         }
     }
-
-
 
 
     public void saveInvoiceAndBill(

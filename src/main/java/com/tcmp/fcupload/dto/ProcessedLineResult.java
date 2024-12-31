@@ -1,6 +1,6 @@
 package com.tcmp.fcupload.dto;
 
-import com.tcmp.fcupload.mdl.InvMaster;
+import com.tcmp.fcupload.model.InvMaster;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

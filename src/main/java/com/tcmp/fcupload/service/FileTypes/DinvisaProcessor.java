@@ -2,24 +2,24 @@ package com.tcmp.fcupload.service.FileTypes;
 
 import com.tcmp.fcupload.dto.CustomFields;
 import com.tcmp.fcupload.dto.ProcessedLineResult;
-import com.tcmp.fcupload.mdl.InvMaster;
-import com.tcmp.fcupload.rep.InvMasterRepository;
+import com.tcmp.fcupload.model.InvMaster;
+import com.tcmp.fcupload.repository.InvMasterRepository;
 import com.tcmp.fcupload.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.ProducerTemplate;
+import org.springframework.cache.CacheManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
 public class DinvisaProcessor extends AbstractFileProcessor {
-    public DinvisaProcessor(ProducerTemplate producerTemplate, FileUtils fileUtils, InvMasterRepository invMasterRepository) {
-        super(producerTemplate, fileUtils, invMasterRepository);
+    public DinvisaProcessor(ProducerTemplate producerTemplate, FileUtils fileUtils, InvMasterRepository invMasterRepository, CacheManager cacheManager) {
+        super(producerTemplate, fileUtils, invMasterRepository, cacheManager);
     }
 
     @Override

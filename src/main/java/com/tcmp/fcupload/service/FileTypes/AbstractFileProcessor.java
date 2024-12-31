@@ -2,34 +2,40 @@ package com.tcmp.fcupload.service.FileTypes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tcmp.fcupload.dto.ProcessedLineResult;
-import com.tcmp.fcupload.mdl.InvMaster;
-import com.tcmp.fcupload.rep.InvMasterRepository;
+import com.tcmp.fcupload.model.InvMaster;
+import com.tcmp.fcupload.repository.InvMasterRepository;
 import com.tcmp.fcupload.utils.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.ProducerTemplate;
+import org.springframework.cache.CacheManager;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.*;
 
 
+
 @Slf4j
 @RequiredArgsConstructor
+@Component
 public abstract class AbstractFileProcessor implements FileProcessor {
 
     protected final ProducerTemplate producerTemplate;
     protected final FileUtils fileUtils;
     protected final InvMasterRepository invMasterRepository;
+    protected final CacheManager cacheManager;
 
     protected List<InvMaster> invMasterBatch = new ArrayList<>();
     protected List<Map<String, String>> processedLines = new ArrayList<>();
     protected List<Map<String, String>> basicIntrumentList;
     protected Integer rejectedLines = 0;
     protected Integer successLines = 0;
+
+
 
 
     protected abstract ProcessedLineResult processLine(String line, String cliCIF, String fileUploadId, String accountNumber) throws Exception;
@@ -57,9 +63,11 @@ public abstract class AbstractFileProcessor implements FileProcessor {
         invMasterRepository.saveAll(invMasterBatch);
 
         sendPayment(lines.size(), totalAmount, fileUploadId, cliCIF, orderId, uploadUser, subserviceId,
-                subservice, accountNumber);
+                subservice, accountNumber, successLines.toString(), rejectedLines.toString());
 
         basicIntrumentList = processedLines;
+        cacheManager.getCache("batchCache").put("successLines", successLines);
+        cacheManager.getCache("batchCache").put("rejectedLines", rejectedLines);
         log.info("Finished processing. Total inserted: Rows={}", invMasterBatch.size());
         log.info("Processing completed. Success: {}, Rejected: {}", successLines, rejectedLines);
     }
@@ -77,7 +85,7 @@ public abstract class AbstractFileProcessor implements FileProcessor {
 
     private void sendPayment(int size, BigDecimal totalAmount, String fileUploadId,
                              String CIF, String orderId, String uploadUser, String subserviceId,
-                             String subservice, String accoutNumber) {
+                             String subservice, String accoutNumber, String linesOK, String linesError) {
         try {
             // Create message JSON to direct:SendPayment
             Map<String, Object> paymentData = new HashMap<>();
@@ -90,6 +98,8 @@ public abstract class AbstractFileProcessor implements FileProcessor {
             paymentData.put("subservice", subservice);
             paymentData.put("cif", CIF);
             paymentData.put("accountNumber", accoutNumber);
+            paymentData.put("linesOk", linesOK);
+            paymentData.put("linesError", linesError);
 
 
             ObjectMapper objectMapper = new ObjectMapper();
@@ -102,4 +112,6 @@ public abstract class AbstractFileProcessor implements FileProcessor {
             log.error("Error sending JSON to Kafka", e);
         }
     }
+
+
 }
