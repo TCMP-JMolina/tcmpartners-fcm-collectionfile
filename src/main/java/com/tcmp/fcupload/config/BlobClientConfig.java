@@ -39,6 +39,7 @@ public class BlobClientConfig {
             private String containerName;
             private String allowedExtensions;
             private String readDirectory;
+            private String copyDirectory;
         }
     }
 }

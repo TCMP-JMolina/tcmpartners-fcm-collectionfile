@@ -2,6 +2,7 @@ package com.tcmp.fcupload.router;
 
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobServiceClient;
+import com.tcmp.fcupload.config.BlobClientConfig;
 import com.tcmp.fcupload.service.BlobService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ public class BlobProcessor implements Processor {
 
     private final BlobService blobService;
     private final BlobServiceClient blobServiceClient;
+    private final BlobClientConfig blobClientConfig;
 
     @Override
     public void process(Exchange exchange) throws Exception {
@@ -33,6 +35,8 @@ public class BlobProcessor implements Processor {
 
             blobService.processFileMetadata(blobClient, blobName, exchange);
             blobService.processFileContent( blobName, exchange);
+            blobService.moveBlobHeader(exchange, containerName);
+
 
         } else {
             log.warn("Skipping directory or non-file blob: {}", blobName);

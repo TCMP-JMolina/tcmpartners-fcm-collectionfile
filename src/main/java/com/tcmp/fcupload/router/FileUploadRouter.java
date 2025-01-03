@@ -25,6 +25,7 @@ public class FileUploadRouter extends RouteBuilder {
     private final CollectionReqService reqService;
     private final BlobService blobService;
     private final BlobServiceClient blobServiceClient;
+    private final BlobClientConfig blobClientConfig;
 
 
     @Value("${camel.component.kafka.brokers}")
@@ -46,7 +47,7 @@ public class FileUploadRouter extends RouteBuilder {
                 "&delay=60000")
                 .routeId("blob-storage-watch")
                 .split(body())
-                .process(new BlobProcessor(blobService, blobServiceClient))
+                .process(new BlobProcessor(blobService, blobServiceClient, blobClientConfig))
                 .log("The process is finished");
 
 

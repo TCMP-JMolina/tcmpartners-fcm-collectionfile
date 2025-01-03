@@ -1,6 +1,7 @@
 package com.tcmp.fcupload.service;
 
 import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobProperties;
 import com.tcmp.fcupload.config.BlobClientConfig;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class BlobService {
 
 
     private final BlobClientConfig blobClientConfig;
+    private final BlobServiceClient blobServiceClient;
     private final UploadService uploadService;
 
 
@@ -67,14 +69,33 @@ public class BlobService {
         }
     }
 
-    //    private void moveBlob(Exchange exchange) {
-//        String originalBlobName = exchange.getIn().getHeader("originalBlobName", String.class);
-//        String destinationBlobName = originalBlobName.replace("recaudos/test/", "recaudos/out/");
-//
-//        azureBlobService.copyBlob(originalBlobName, destinationBlobName);
-//
-//        log.info("File successfully processed and moved to 'out'.");
-//    }
+    public void moveBlobHeader(Exchange exchange, String containerName) throws Exception {
+        String originalBlobName = exchange.getIn().getHeader("originalBlobName", String.class);
+        String destinationBlobName = originalBlobName.replace(
+                blobClientConfig.getComponent().getAzureStorageBlob().getReadDirectory()
+                , blobClientConfig.getComponent().getAzureStorageBlob().getCopyDirectory());
 
+        BlobClient sourceBlobClient = blobServiceClient
+                .getBlobContainerClient(containerName)
+                .getBlobClient(originalBlobName);
+
+        BlobClient destinationBlobClient = blobServiceClient
+                .getBlobContainerClient(containerName)
+                .getBlobClient(destinationBlobName);
+
+        String sourceUrlWithSas = sourceBlobClient.getBlobUrl() + "?" + blobClientConfig.getComponent().getAzureStorageBlob().getSasToken();
+
+        try {
+            destinationBlobClient.copyFromUrl(sourceUrlWithSas);
+            log.info("File copied to: {}", destinationBlobName);
+
+            sourceBlobClient.delete();
+            log.info("File deleted from source: {}", originalBlobName);
+        } catch (Exception e) {
+            log.error("Error moving blob from 'in' to 'out': ", e);
+            throw e;
+        }
+
+    }
 
 }

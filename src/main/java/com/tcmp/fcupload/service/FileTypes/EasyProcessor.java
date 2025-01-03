@@ -26,7 +26,6 @@ public class EasyProcessor extends AbstractFileProcessor {
 
         log.info("Processing EasyPagos Line: {}", line);
 
-
         String orientationCode = line.substring(0, 2).trim(); // Código de Orientación (1-2)
         String counterpartCode = line.substring(2, 22).trim(); // Contrapartida (3-22)
         String currencyCode = line.substring(22, 25).trim(); // Moneda (23-25)

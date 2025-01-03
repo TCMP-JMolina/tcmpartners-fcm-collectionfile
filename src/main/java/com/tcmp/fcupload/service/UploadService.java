@@ -63,6 +63,9 @@ public class UploadService {
     @Autowired
     private CacheManager cacheManager;
 
+//    @Autowired
+//    private ProcessFileService processFileService;
+
 
     // public void processFile(Exchange exchange)  {
     public void processFile(Exchange exchange, Map<String, Object> blobMetadataRaw, String fileName, Long fileSize) throws IOException {
@@ -126,7 +129,7 @@ public class UploadService {
 
             long endTime = System.currentTimeMillis();
             log.info("Time taken to process the file '{}' : {} ms", fileName, endTime - startTime);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -143,16 +146,23 @@ public class UploadService {
             String subserviceId,
             String subservice,
             String accountNumber
-    ) {
+    ) throws Exception {
 
         List<String> lines = linesFile.get(fileName);
         if (lines != null && !lines.isEmpty()) {
-            if (fileName.toLowerCase().contains(".txt")) {
-                try {
-                    FileProcessor strategy = getProcessorStrategy(interfaceCode);
-                    strategy.process(lines, fileUploadId, cliCIF, orderId, uploadUser, subserviceId, subservice, accountNumber);
-                } catch (Exception e) {
-                    log.error("Error processing line from file: {}", fileName, e);
+//            if (fileName.toLowerCase().contains(".txt")) {
+//                processFileService.processLineByLine(lines, fileUploadId, cliCIF, orderId, uploadUser, subserviceId, subservice, accountNumber);
+//
+//            }
+
+            if (lines != null && !lines.isEmpty()) {
+                if (fileName.toLowerCase().contains(".txt")) {
+                    try {
+                        FileProcessor strategy = getProcessorStrategy(interfaceCode);
+                        strategy.process(lines, fileUploadId, cliCIF, orderId, uploadUser, subserviceId, subservice, accountNumber);
+                    } catch (Exception e) {
+                        log.error("Error processing line from file: {}", fileName, e);
+                    }
                 }
             }
 //            if (fileName.toLowerCase().contains(".csv")) {
@@ -194,7 +204,7 @@ public class UploadService {
             String clientCIF,
             String fileUploadId,
             Map<String, Object> metadata) {
-        log.info("Sucesslines {}", successLines);
+        log.info("Success lines{}", successLines);
 
         instrumentService.createInstrument(metadata, basicIntrumentList);
 
@@ -306,16 +316,12 @@ public class UploadService {
             log.warn("The original InputStream is null.");
             return null;
         }
-        // Primero, marcar el InputStream para que se pueda resetear
-        inputStream.mark(Integer.MAX_VALUE); // Marca una posición, leemos hasta un límite arbitrario
 
-        // Leer los bytes
+        inputStream.mark(Integer.MAX_VALUE);
+
         byte[] fileBytes = inputStream.readAllBytes();
-
-        // Restablecer el InputStream a la posición marcada
         inputStream.reset();
 
-        // Crear un nuevo ByteArrayInputStream con los bytes leídos
         return new ByteArrayInputStream(fileBytes);
     }
 
